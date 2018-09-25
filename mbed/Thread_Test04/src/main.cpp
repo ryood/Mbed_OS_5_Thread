@@ -1,5 +1,5 @@
 /*
- * Mbed OS 5 Thread Test03
+ * Mbed OS 5 Thread Test04
  *
  * 2018.09.25
  *
@@ -8,7 +8,9 @@
 #include "mbed.h"
 #include "u8g2.h"
 
-#define TITLE_STR1  ("Thread Test03")
+#define SET_PRIORITY (1)
+
+#define TITLE_STR1  ("Thread Test04")
 #define TITLE_STR2  (__DATE__)
 #define TITLE_STR3  (__TIME__)
 
@@ -20,8 +22,8 @@ u8g2_t myScreen;
 
 AnalogIn Adc1(A0);
 AnalogIn Adc2(A1);
-AnalogIn Adc3(A3);
-AnalogIn Adc4(A4);
+AnalogIn Adc3(A2);
+AnalogIn Adc4(A3);
 
 AnalogOut Dac1(A2);
 
@@ -32,6 +34,9 @@ DigitalOut CheckPin2(D3);
 DigitalOut CheckPin3(D4);
 
 Ticker dacHandler;
+
+Thread thDisplay;
+Thread thAdc;
 
 volatile float v1;
 volatile float v2;
@@ -60,40 +65,44 @@ void writeDac()
 	CheckPin1.write(0);
 }
 
-//-------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Thread Callback
 //
 
 void readAdc()
 {
-	CheckPin3.write(1);
-	
-	v1 = Adc1.read();
-	v2 = Adc2.read();
-	v3 = Adc3.read();
-	v4 = Adc4.read();
-	
-	CheckPin3.write(0);
+	while (1) {
+		CheckPin3.write(1);
+
+		v1 = Adc1.read();
+		v2 = Adc2.read();
+		v3 = Adc3.read();
+		v4 = Adc4.read();
+
+		CheckPin3.write(0);
+	}
 }
 
 void display()
 {
 	char strBuffer[20];
 	
-	CheckPin2.write(1);
+	while(1) {
+		CheckPin2.write(1);
 
-	u8g2_ClearBuffer(&myScreen);
-	u8g2_SetFont(&myScreen, u8g2_font_10x20_mf);
-	sprintf(strBuffer, "%6.4f %6.4f", v1, v2); 
-	u8g2_DrawStr(&myScreen, 0, 16, strBuffer);
-	sprintf(strBuffer, "%6.4f %6.4f", v3, v4); 
-	u8g2_DrawStr(&myScreen, 0, 32, strBuffer);
-	u8g2_SendBuffer(&myScreen);
+		u8g2_ClearBuffer(&myScreen);
+		u8g2_SetFont(&myScreen, u8g2_font_10x20_mf);
+		sprintf(strBuffer, "%6.4f %6.4f", v1, v2); 
+		u8g2_DrawStr(&myScreen, 0, 16, strBuffer);
+		sprintf(strBuffer, "%6.4f %6.4f", v3, v4); 
+		u8g2_DrawStr(&myScreen, 0, 32, strBuffer);
+		u8g2_SendBuffer(&myScreen);
 
-	CheckPin2.write(0);
+		CheckPin2.write(0);
+	}
 }
 
-//-------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Main Routine
 //
 void u8g2Initialize()
@@ -113,19 +122,27 @@ int main()
 {
 	u8g2Initialize();
 	wait(3.0);
+
+#if (SET_PRIORITY)
+	thAdc.set_priority(osPriorityHigh);
+	thDisplay.set_priority(osPriorityLow);
+#endif //SET_PRIORITY
+	
+	thAdc.start(readAdc);
+	thDisplay.start(display);
 	
 	float period = 1.0f / SAMPLING_RATE;
 	dacHandler.attach(&writeDac, period);
 	
 	while(1) {
-		readAdc();
-		display();
-		
+		CheckPin1.write(1);
 		if (v1 > 0.5) {
 			Led1.write(1);
 		}
 		else {
 			Led1.write(0);
 		}
+		CheckPin1.write(0);
+		wait(0.1);
 	}
 }
