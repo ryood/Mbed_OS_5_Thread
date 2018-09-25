@@ -1,5 +1,5 @@
 /*
- * Mbed OS 5 Test02
+ * Mbed OS 5 Thread Test02
  *
  * 2018.09.25
  *
@@ -8,9 +8,9 @@
 #include "mbed.h"
 #include "u8g2.h"
 
-#define SET_PRIORITY (1)
+#define SET_PRIORITY (0)
 
-#define TITLE_STR1  ("Mbed OS 5 Test02")
+#define TITLE_STR1  ("Thread Test02")
 #define TITLE_STR2  (__DATE__)
 #define TITLE_STR3  (__TIME__)
 
