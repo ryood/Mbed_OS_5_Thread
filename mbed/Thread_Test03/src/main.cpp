@@ -1,5 +1,5 @@
 /*
- * Mbed OS 5 Thread Test01
+ * Mbed OS 5 Thread Test03
  *
  * 2018.09.25
  *
@@ -8,17 +8,22 @@
 #include "mbed.h"
 #include "u8g2.h"
 
-#define TITLE_STR1  ("Thread Test01")
+#define TITLE_STR1  ("Thread Test03")
 #define TITLE_STR2  (__DATE__)
 #define TITLE_STR3  (__TIME__)
+
+#define SAMPLING_RATE (50000.0f)  // Hz
+#define PI_F          (3.1415926f)
 
 uint8_t u8x8_gpio_and_delay_mbed(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
 u8g2_t myScreen;
 
 AnalogIn Adc1(A0);
 AnalogIn Adc2(A1);
-AnalogIn Adc3(A2);
-AnalogIn Adc4(A3);
+AnalogIn Adc3(A3);
+AnalogIn Adc4(A4);
+
+AnalogOut Dac1(A2);
 
 DigitalOut Led1(LED1);
 
@@ -26,14 +31,34 @@ DigitalOut CheckPin1(D2);
 DigitalOut CheckPin2(D3);
 DigitalOut CheckPin3(D4);
 
+Ticker dacHandler;
+
 volatile float v1;
 volatile float v2;
 volatile float v3;
 volatile float v4;
 
+volatile float phase = 0.0f;
+
 //-------------------------------------------------------------------------------------------------------------
 // Ticker
 //
+void writeDac()
+{
+	CheckPin1.write(1);
+
+	phase += 1.0f / (SAMPLING_RATE / (v1 * 900.0f + 100.0f));  // 100Hz ~ 1000Hz
+	if (phase > 1.0f) {
+		phase = 0.0f;
+	}
+	
+	float rad = 2.0f * PI_F * phase;
+	float amp = sinf(rad) / 2.0f + 0.5f;
+	
+	Dac1.write(amp * v2);
+			
+	CheckPin1.write(0);
+}
 
 //-------------------------------------------------------------------------------------------------------------
 // Thread Callback
@@ -89,9 +114,10 @@ int main()
 	u8g2Initialize();
 	wait(3.0);
 	
+	float period = 1.0f / SAMPLING_RATE;
+	dacHandler.attach(&writeDac, period);
+	
 	while(1) {
-		CheckPin1.write(1);
-		
 		readAdc();
 		display();
 		
@@ -101,7 +127,5 @@ int main()
 		else {
 			Led1.write(0);
 		}
-		
-		CheckPin1.write(0);
 	}
 }
