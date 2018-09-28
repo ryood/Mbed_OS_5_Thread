@@ -9,6 +9,7 @@
 #include "u8g2.h"
 
 #define SET_PRIORITY (1)
+#define DISPLAY_OLED (1)
 
 #define TITLE_STR1  ("Thread Test04")
 #define TITLE_STR2  (__DATE__)
@@ -54,7 +55,7 @@ void writeDac()
 
 	phase += 1.0f / (SAMPLING_RATE / (v1 * 900.0f + 100.0f));  // 100Hz ~ 1000Hz
 	if (phase > 1.0f) {
-		phase = 0.0f;
+		phase = phase - 1.0f;
 	}
 	
 	float rad = 2.0f * PI_F * phase;
@@ -129,8 +130,10 @@ int main()
 #endif //SET_PRIORITY
 	
 	thAdc.start(readAdc);
+#if (DISPLAY_OLED)
 	thDisplay.start(display);
-	
+#endif
+
 	float period = 1.0f / SAMPLING_RATE;
 	dacHandler.attach(&writeDac, period);
 	

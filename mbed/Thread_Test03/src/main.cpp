@@ -49,7 +49,7 @@ void writeDac()
 
 	phase += 1.0f / (SAMPLING_RATE / (v1 * 900.0f + 100.0f));  // 100Hz ~ 1000Hz
 	if (phase > 1.0f) {
-		phase = 0.0f;
+		phase = phase - 1.0f;
 	}
 	
 	float rad = 2.0f * PI_F * phase;
